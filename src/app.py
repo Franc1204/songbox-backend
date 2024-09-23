@@ -140,18 +140,14 @@ def callback():
         try:
             token_info = sp_oauth.get_access_token(code)
             session['token_info'] = token_info
-            
-            # Obtén la información del usuario
-            sp = spotipy.Spotify(auth=token_info['access_token'])
+            # Puedes también almacenar el nombre de usuario si lo deseas
             user_profile = sp.current_user()
-            # Almacena el nombre de usuario en la sesión
-            session['user_name'] = user_profile['display_name']
-            
+            session['username'] = user_profile['display_name']
             return redirect(url_for('home'))
         except Exception as e:
-            return jsonify({"message": f"Error al obtener el token de acceso de Spotify: {str(e)}"}), 400
-    else:
-        return jsonify({"message": "Error: No se ha recibido el código de autorización de Spotify"}), 400
+            return jsonify({"message": f"Error: {str(e)}"}), 400
+    return jsonify({"message": "Error: No se ha recibido el código de autorización de Spotify"}), 400
+
 
 @app.route('/home')
 def home():
