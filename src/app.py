@@ -138,29 +138,30 @@ def callback():
 
     if code:
         try:
-            print(f"Codigo de autorizacion recibido: {code}")
             token_info = sp_oauth.get_access_token(code)
-            print(f"Token info: {token_info}")
             session['token_info'] = token_info
-            print("Token de Spotify almacenado:", token_info)
+            
+            # Obtén la información del usuario
+            sp = spotipy.Spotify(auth=token_info['access_token'])
+            user_profile = sp.current_user()
+            # Almacena el nombre de usuario en la sesión
+            session['user_name'] = user_profile['display_name']
+            
             return redirect(url_for('home'))
         except Exception as e:
             return jsonify({"message": f"Error al obtener el token de acceso de Spotify: {str(e)}"}), 400
     else:
-        print("Codigo de autorizacion no recibido")
         return jsonify({"message": "Error: No se ha recibido el código de autorización de Spotify"}), 400
 
 @app.route('/home')
 def home():
     token_info = get_spotify_token()
-    print("Token en /home", token_info)
     if token_info:
         sp_oauth = create_spotify_oauth()
         refresh_spotify_token(sp_oauth)
-        sp = spotipy.Spotify(auth=token_info['access_token'])
-        user_profile = sp.current_user()
-        return f"Bievenido, {user_profile['display_name']}!"
-    return "Por favor, inicia sesion"
+        user_name = session.get('user_name', 'Invitado') 
+        return f"Bienvenido, {user_name}!"
+    return "Por favor, inicia sesión"
 
 
 # --------------------------- Coleccion Album -------------------------
