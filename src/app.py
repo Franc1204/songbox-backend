@@ -139,26 +139,37 @@ def callback():
     if code:
         try:
             token_info = sp_oauth.get_access_token(code)
-            session['token_info'] = token_info
-            # Puedes también almacenar el nombre de usuario si lo deseas
+            sp = spotipy.Spotify(auth=token_info['access_token'])
             user_profile = sp.current_user()
-            session['username'] = user_profile['display_name']
+            spotify_user_id = user_profile['id']  # Obtén el ID de usuario de Spotify
+
+            # Almacenar el token en la base de datos
+            mongo.db.tokens.update_one(
+                {'spotify_user_id': spotify_user_id},
+                {'$set': {
+                    'access_token': token_info['access_token'],
+                    'refresh_token': token_info['refresh_token'],
+                    'expires_at': token_info['expires_at']
+                }},
+                upsert=True
+            )
+            # Almacenar el nombre de usuario en la sesión
+            session['user_name'] = user_profile['display_name']
+
             return redirect(url_for('home'))
         except Exception as e:
-            return jsonify({"message": f"Error: {str(e)}"}), 400
+            return jsonify({"message": f"Error al obtener el token de acceso de Spotify: {str(e)}"}), 400
     return jsonify({"message": "Error: No se ha recibido el código de autorización de Spotify"}), 400
-
-
 @app.route('/home')
 def home():
     token_info = get_spotify_token()
     if token_info:
+        # Aquí llamamos a refresh_spotify_token si es necesario
         sp_oauth = create_spotify_oauth()
         refresh_spotify_token(sp_oauth)
-        user_name = session.get('user_name', 'Invitado') 
+        user_name = session.get('user_name', 'Invitado')
         return f"Bienvenido, {user_name}!"
     return "Por favor, inicia sesión"
-
 
 # --------------------------- Coleccion Album -------------------------
 
